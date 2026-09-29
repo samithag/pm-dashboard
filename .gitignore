@@ -174,3 +174,7 @@ cython_debug/
 
 .DS_Store
 
+
+# Kanban local sqlite
+backend/data/
+*.db

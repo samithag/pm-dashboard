@@ -2,6 +2,7 @@ import { useState } from "react";
 import clsx from "clsx";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CircleDashed } from "lucide-react";
 import type { Card, Column } from "@/lib/kanban";
 import { KanbanCard } from "@/components/KanbanCard";
 import { NewCardForm } from "@/components/NewCardForm";
@@ -9,6 +10,7 @@ import { NewCardForm } from "@/components/NewCardForm";
 type KanbanColumnProps = {
   column: Column;
   cards: Card[];
+  accent: string;
   onRename: (columnId: string, title: string) => void;
   onAddCard: (columnId: string, title: string, details: string) => void;
   onEditCard: (cardId: string, title: string, details: string) => void;
@@ -18,6 +20,7 @@ type KanbanColumnProps = {
 export const KanbanColumn = ({
   column,
   cards,
+  accent,
   onRename,
   onAddCard,
   onEditCard,
@@ -46,34 +49,36 @@ export const KanbanColumn = ({
     <section
       ref={setNodeRef}
       className={clsx(
-        "flex min-h-[520px] flex-col rounded-3xl border border-[var(--stroke)] bg-[var(--surface-strong)] p-4 shadow-[var(--shadow)] transition",
-        isOver && "ring-2 ring-[var(--accent-yellow)]"
+        "flex max-h-[calc(100vh-220px)] min-h-[420px] w-[288px] shrink-0 snap-start flex-col rounded-2xl border bg-[#eef1f6]/80 p-3 transition",
+        isOver
+          ? "border-[rgba(32,157,215,0.5)] ring-2 ring-[var(--ring)]"
+          : "border-[var(--stroke)]"
       )}
       data-testid={`column-${column.id}`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="w-full">
-          <div className="flex items-center gap-3">
-            <div className="h-2 w-10 rounded-full bg-[var(--accent-yellow)]" />
-            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--gray-text)]">
-              {cards.length} cards
-            </span>
-          </div>
-          <input
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            onBlur={commitRename}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                (event.target as HTMLInputElement).blur();
-              }
-            }}
-            className="mt-3 w-full bg-transparent font-display text-lg font-semibold text-[var(--navy-dark)] outline-none"
-            aria-label="Column title"
-          />
-        </div>
+      <div className="flex items-center gap-2 px-1">
+        <span
+          aria-hidden
+          className="h-2.5 w-2.5 shrink-0 rounded-full"
+          style={{ backgroundColor: accent }}
+        />
+        <input
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={commitRename}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              (event.target as HTMLInputElement).blur();
+            }
+          }}
+          className="min-w-0 flex-1 bg-transparent font-display text-[15px] font-semibold text-[var(--navy-dark)] outline-none transition rounded-md px-1 -mx-1 focus:bg-white focus:ring-2 focus:ring-[var(--ring)]"
+          aria-label="Column title"
+        />
+        <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[11px] font-bold tabular-nums text-[var(--gray-text)] shadow-sm">
+          {cards.length}
+        </span>
       </div>
-      <div className="mt-4 flex flex-1 flex-col gap-3">
+      <div className="scroll-slim mt-3 flex flex-1 flex-col gap-2.5 overflow-y-auto pr-0.5">
         <SortableContext items={column.cardIds} strategy={verticalListSortingStrategy}>
           {cards.map((card) => (
             <KanbanCard
@@ -85,7 +90,8 @@ export const KanbanColumn = ({
           ))}
         </SortableContext>
         {cards.length === 0 && (
-          <div className="flex flex-1 items-center justify-center rounded-2xl border border-dashed border-[var(--stroke)] px-3 py-6 text-center text-xs font-semibold uppercase tracking-[0.2em] text-[var(--gray-text)]">
+          <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[rgba(3,33,71,0.18)] px-3 py-8 text-center text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--gray-text)]">
+            <CircleDashed size={18} className="opacity-60" />
             Drop a card here
           </div>
         )}

@@ -6,10 +6,13 @@
   --secondary-purple: #753991;
   --navy-dark: #032147;
   --gray-text: #888888;
-  --surface: #f7f8fb;
+  --surface: #f4f6fa;
   --surface-strong: #ffffff;
-  --stroke: rgba(3, 33, 71, 0.08);
+  --stroke: rgba(3, 33, 71, 0.09);
   --shadow: 0 18px 40px rgba(3, 33, 71, 0.12);
+  --card-shadow: 0 1px 2px rgba(3, 33, 71, 0.06), 0 4px 14px rgba(3, 33, 71, 0.06);
+  --card-shadow-hover: 0 2px 4px rgba(3, 33, 71, 0.08), 0 10px 28px rgba(3, 33, 71, 0.12);
+  --ring: rgba(32, 157, 215, 0.35);
 }
 
 @theme inline {
@@ -23,12 +26,85 @@
 }
 
 body {
-  background: var(--surface);
+  background:
+    radial-gradient(1200px 500px at 15% -5%, rgba(32, 157, 215, 0.1), transparent 60%),
+    radial-gradient(1000px 480px at 90% 0%, rgba(117, 57, 145, 0.08), transparent 60%),
+    var(--surface);
   color: var(--navy-dark);
   font-family: var(--font-body), "Segoe UI", sans-serif;
   margin: 0;
+  -webkit-font-smoothing: antialiased;
 }
 
 .font-display {
   font-family: var(--font-display), "Segoe UI", sans-serif;
+}
+
+::selection {
+  background: rgba(236, 173, 10, 0.35);
+}
+
+/* Slim scrollbars for board lanes and chat */
+.scroll-slim {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(3, 33, 71, 0.22) transparent;
+}
+.scroll-slim::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.scroll-slim::-webkit-scrollbar-thumb {
+  background: rgba(3, 33, 71, 0.18);
+  border-radius: 999px;
+}
+.scroll-slim::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.25s ease-out both;
+}
+
+@keyframes typing-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+.typing-dot {
+  animation: typing-bounce 1.1s infinite ease-in-out;
+}
+.typing-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.typing-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  animation: spin 0.9s linear infinite;
 }

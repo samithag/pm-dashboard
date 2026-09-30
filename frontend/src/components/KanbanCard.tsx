@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import clsx from "clsx";
+import { GripVertical, Pencil, Trash2 } from "lucide-react";
 import type { Card } from "@/lib/kanban";
 
 type KanbanCardProps = {
@@ -42,57 +43,73 @@ export const KanbanCard = ({ card, onDelete, onEdit }: KanbanCardProps) => {
       ref={setNodeRef}
       style={style}
       className={clsx(
-        "rounded-2xl border border-transparent bg-white px-4 py-4 shadow-[0_12px_24px_rgba(3,33,71,0.08)]",
-        "transition-all duration-150",
-        isDragging && "opacity-60 shadow-[0_18px_32px_rgba(3,33,71,0.16)]"
+        "group rounded-xl border border-[var(--stroke)] bg-white px-3.5 py-3 shadow-[var(--card-shadow)]",
+        "transition-all duration-150 hover:border-[rgba(32,157,215,0.4)] hover:shadow-[var(--card-shadow-hover)]",
+        isDragging && "rotate-[1.5deg] opacity-90 shadow-[var(--card-shadow-hover)]"
       )}
       {...attributes}
       {...listeners}
       data-testid={`card-${card.id}`}
     >
       {isEditing ? (
-        <div className="space-y-2">
+        <div
+          className="space-y-2"
+          onPointerDown={(event) => event.stopPropagation()}
+        >
           <input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
             aria-label="Card title"
-            className="w-full rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm font-medium text-[var(--navy-dark)] outline-none transition focus:border-[var(--primary-blue)]"
+            placeholder="Card title"
+            className="w-full rounded-lg border border-[var(--stroke)] bg-white px-3 py-2 text-sm font-medium text-[var(--navy-dark)] outline-none transition focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--ring)]"
           />
           <textarea
             value={details}
             onChange={(event) => setDetails(event.target.value)}
             aria-label="Card details"
+            placeholder="Details"
             rows={3}
-            className="w-full resize-none rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm text-[var(--gray-text)] outline-none transition focus:border-[var(--primary-blue)]"
+            className="w-full resize-none rounded-lg border border-[var(--stroke)] bg-white px-3 py-2 text-sm text-[var(--gray-text)] outline-none transition focus:border-[var(--primary-blue)] focus:ring-2 focus:ring-[var(--ring)]"
           />
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={handleSave}
-              className="rounded-full bg-[var(--secondary-purple)] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white transition hover:brightness-110"
+              className="rounded-full bg-[var(--navy-dark)] px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-white transition hover:bg-[var(--secondary-purple)]"
             >
               Save
             </button>
             <button
               type="button"
               onClick={handleCancel}
-              className="rounded-full border border-[var(--stroke)] px-3 py-1 text-xs font-semibold uppercase tracking-wide text-[var(--gray-text)] transition hover:text-[var(--navy-dark)]"
+              className="rounded-full border border-[var(--stroke)] px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--gray-text)] transition hover:text-[var(--navy-dark)]"
             >
               Cancel
             </button>
           </div>
         </div>
       ) : (
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-2">
+          <span
+            aria-hidden
+            className="mt-0.5 shrink-0 cursor-grab text-[var(--gray-text)] opacity-0 transition group-hover:opacity-60"
+          >
+            <GripVertical size={14} />
+          </span>
           <div className="min-w-0 flex-1">
-            <h4 className="font-display text-base font-semibold text-[var(--navy-dark)]">
+            <h4 className="font-display text-[15px] font-semibold leading-snug text-[var(--navy-dark)]">
               {card.title}
             </h4>
-            <p className="mt-2 text-sm leading-6 text-[var(--gray-text)]">
-              {card.details}
-            </p>
+            {card.details && (
+              <p className="mt-1.5 line-clamp-3 text-[13px] leading-5 text-[var(--gray-text)]">
+                {card.details}
+              </p>
+            )}
           </div>
-          <div className="flex shrink-0 flex-col items-end gap-1">
+          <div
+            className="flex shrink-0 items-center gap-0.5 md:opacity-0 md:transition md:group-hover:opacity-100 md:group-focus-within:opacity-100"
+            onPointerDown={(event) => event.stopPropagation()}
+          >
             <button
               type="button"
               onClick={() => {
@@ -100,18 +117,20 @@ export const KanbanCard = ({ card, onDelete, onEdit }: KanbanCardProps) => {
                 setDetails(card.details);
                 setIsEditing(true);
               }}
-              className="whitespace-nowrap rounded-full border border-transparent px-2 py-1 text-xs font-semibold text-[var(--gray-text)] transition hover:border-[var(--stroke)] hover:text-[var(--navy-dark)]"
+              className="rounded-lg p-1.5 text-[var(--gray-text)] transition hover:bg-[rgba(32,157,215,0.1)] hover:text-[var(--primary-blue)]"
               aria-label={`Edit ${card.title}`}
+              title="Edit card"
             >
-              Edit
+              <Pencil size={14} />
             </button>
             <button
               type="button"
               onClick={() => onDelete(card.id)}
-              className="whitespace-nowrap rounded-full border border-transparent px-2 py-1 text-xs font-semibold text-[var(--gray-text)] transition hover:border-[var(--stroke)] hover:text-[var(--navy-dark)]"
+              className="rounded-lg p-1.5 text-[var(--gray-text)] transition hover:bg-[rgba(220,38,38,0.08)] hover:text-red-600"
               aria-label={`Delete ${card.title}`}
+              title="Delete card"
             >
-              Remove
+              <Trash2 size={14} />
             </button>
           </div>
         </div>

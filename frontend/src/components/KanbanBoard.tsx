@@ -11,6 +11,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
+import { CircleAlert, KanbanSquare, Layers, LoaderCircle, LogOut } from "lucide-react";
 import { KanbanColumn } from "@/components/KanbanColumn";
 import { KanbanCardPreview } from "@/components/KanbanCardPreview";
 import { LoginForm } from "@/components/LoginForm";
@@ -28,6 +29,8 @@ import {
 } from "@/lib/api";
 
 type Status = "loading" | "login" | "ready";
+
+const COLUMN_ACCENTS = ["#209dd7", "#753991", "#ecad0a", "#0e9f6e", "#e5486f"];
 
 export const KanbanBoard = () => {
   const [status, setStatus] = useState<Status>("loading");
@@ -54,6 +57,7 @@ export const KanbanBoard = () => {
   }, [refresh]);
 
   const handleLoginSuccess = useCallback(async () => {
+    setError(null);
     try {
       await refresh();
       setStatus("ready");
@@ -63,8 +67,13 @@ export const KanbanBoard = () => {
   }, [refresh]);
 
   const handleLogout = useCallback(async () => {
-    await apiLogout();
+    try {
+      await apiLogout();
+    } catch {
+      // Cookie may already be gone; still return to login.
+    }
     setBoard(null);
+    setError(null);
     setStatus("login");
   }, []);
 
@@ -98,6 +107,7 @@ export const KanbanBoard = () => {
       return;
     }
 
+    setError(null);
     apiMoveCard(activeId, targetColumnId, targetIndex).catch(async (err) => {
       setError(err instanceof Error ? err.message : "Failed to move card");
       await refresh().catch(() => {});
@@ -116,6 +126,7 @@ export const KanbanBoard = () => {
           }
         : prev
     );
+    setError(null);
     apiRenameColumn(columnId, title).catch(async (err) => {
       setError(err instanceof Error ? err.message : "Failed to rename column");
       await refresh().catch(() => {});
@@ -127,6 +138,7 @@ export const KanbanBoard = () => {
     title: string,
     details: string
   ) => {
+    setError(null);
     try {
       await apiAddCard(columnId, title, details || "No details yet.");
       await refresh();
@@ -149,6 +161,7 @@ export const KanbanBoard = () => {
           }
         : prev
     );
+    setError(null);
     try {
       await apiUpdateCard(cardId, title, details);
     } catch (err) {
@@ -176,6 +189,7 @@ export const KanbanBoard = () => {
         ),
       };
     });
+    setError(null);
     apiDeleteCard(cardId).catch(async (err) => {
       setError(err instanceof Error ? err.message : "Failed to delete card");
       await refresh().catch(() => {});
@@ -184,10 +198,15 @@ export const KanbanBoard = () => {
 
   const cardsById = useMemo(() => board?.cards ?? {}, [board]);
   const activeCard = activeCardId ? cardsById[activeCardId] : null;
+  const totalCards = useMemo(
+    () => (board ? Object.keys(board.cards).length : 0),
+    [board]
+  );
 
   if (status === "loading") {
     return (
-      <main className="mx-auto flex min-h-screen max-w-[1500px] items-center justify-center px-6">
+      <main className="mx-auto flex min-h-screen max-w-[1500px] flex-col items-center justify-center gap-3 px-6">
+        <LoaderCircle size={22} className="spinner text-[var(--primary-blue)]" />
         <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[var(--gray-text)]">
           Loading board...
         </p>
@@ -205,7 +224,8 @@ export const KanbanBoard = () => {
 
   if (!board) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-[1500px] items-center justify-center px-6">
+      <main className="mx-auto flex min-h-screen max-w-[1500px] flex-col items-center justify-center gap-3 px-6">
+        <LoaderCircle size={22} className="spinner text-[var(--primary-blue)]" />
         <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[var(--gray-text)]">
           Loading board...
         </p>
@@ -214,73 +234,65 @@ export const KanbanBoard = () => {
   }
 
   return (
-    <div className="relative overflow-hidden">
-      <div className="pointer-events-none absolute left-0 top-0 h-[420px] w-[420px] -translate-x-1/3 -translate-y-1/3 rounded-full bg-[radial-gradient(circle,_rgba(32,157,215,0.25)_0%,_rgba(32,157,215,0.05)_55%,_transparent_70%)]" />
-      <div className="pointer-events-none absolute bottom-0 right-0 h-[520px] w-[520px] translate-x-1/4 translate-y-1/4 rounded-full bg-[radial-gradient(circle,_rgba(117,57,145,0.18)_0%,_rgba(117,57,145,0.05)_55%,_transparent_75%)]" />
-
-      <main className="relative mx-auto flex min-h-screen max-w-[1500px] flex-col gap-10 px-6 pb-16 pt-12">
-        <header className="flex flex-col gap-6 rounded-[32px] border border-[var(--stroke)] bg-white/80 p-8 shadow-[var(--shadow)] backdrop-blur">
-          <div className="flex flex-wrap items-start justify-between gap-6">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--gray-text)]">
-                Single Board Kanban
-              </p>
-              <h1 className="mt-3 font-display text-4xl font-semibold text-[var(--navy-dark)]">
-                Kanban Studio
-              </h1>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--gray-text)]">
-                Keep momentum visible. Rename columns, drag cards between stages,
-                and capture quick notes without getting buried in settings.
-              </p>
-            </div>
-            <div className="flex flex-col items-end gap-3">
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="rounded-full border border-[var(--stroke)] px-4 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--gray-text)] transition hover:text-[var(--navy-dark)]"
-              >
-                Log out
-              </button>
-              <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--surface)] px-5 py-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--gray-text)]">
-                  Focus
-                </p>
-                <p className="mt-2 text-lg font-semibold text-[var(--primary-blue)]">
-                  One board. Five columns. Zero clutter.
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-4">
-            {board.columns.map((column) => (
-              <div
-                key={column.id}
-                className="flex items-center gap-2 rounded-full border border-[var(--stroke)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--navy-dark)]"
-              >
-                <span className="h-2 w-2 rounded-full bg-[var(--accent-yellow)]" />
-                {column.title}
-              </div>
-            ))}
-          </div>
-          {error && (
-            <p role="alert" className="text-sm font-medium text-red-600">
-              {error}
+    <div className="relative min-h-screen">
+      <header className="sticky top-0 z-20 border-b border-[var(--stroke)] bg-white/85 backdrop-blur">
+        <div className="mx-auto flex max-w-[1500px] items-center gap-3 px-4 py-3 sm:px-6">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--navy-dark)] text-white shadow-sm">
+            <Layers size={17} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate font-display text-lg font-semibold leading-tight text-[var(--navy-dark)]">
+              Kanban Studio
+            </h1>
+            <p className="hidden text-xs text-[var(--gray-text)] sm:block">
+              Single Board Kanban
             </p>
-          )}
-        </header>
+          </div>
+          <div className="hidden items-center gap-2 md:flex">
+            <span className="flex items-center gap-1.5 rounded-full border border-[var(--stroke)] bg-[#f6f8fb] px-3 py-1.5 text-xs font-semibold text-[var(--navy-dark)]">
+              <KanbanSquare size={13} className="text-[var(--primary-blue)]" />
+              {board.columns.length} columns
+            </span>
+            <span className="flex items-center gap-1.5 rounded-full border border-[var(--stroke)] bg-[#f6f8fb] px-3 py-1.5 text-xs font-semibold text-[var(--navy-dark)]">
+              <span className="h-2 w-2 rounded-full bg-[var(--accent-yellow)]" />
+              {totalCards} cards
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-[var(--stroke)] px-3.5 py-2 text-xs font-semibold uppercase tracking-wide text-[var(--gray-text)] transition hover:border-[var(--navy-dark)] hover:text-[var(--navy-dark)]"
+          >
+            <LogOut size={13} />
+            <span className="hidden sm:inline">Log out</span>
+          </button>
+        </div>
+      </header>
 
-        <div className="flex flex-col gap-6 xl:flex-row xl:items-start">
+      <main className="mx-auto flex min-h-[calc(100vh-65px)] max-w-[1500px] flex-col gap-5 px-4 pb-10 pt-5 sm:px-6">
+        {error && (
+          <p role="alert" className="flex items-center gap-2 rounded-xl border border-[rgba(220,38,38,0.25)] bg-[rgba(220,38,38,0.06)] px-4 py-2.5 text-sm font-medium text-red-600">
+            <CircleAlert size={15} className="shrink-0" />
+            {error}
+          </p>
+        )}
+
+        <div className="flex flex-1 flex-col gap-5 xl:flex-row xl:items-start">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCorners}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
           >
-            <section className="grid flex-1 gap-6 lg:grid-cols-5 xl:grid-cols-5">
-              {board.columns.map((column) => (
+            <section
+              aria-label="Kanban board"
+              className="scroll-slim flex flex-1 gap-4 overflow-x-auto pb-2 xl:flex-wrap xl:overflow-visible"
+            >
+              {board.columns.map((column, i) => (
                 <KanbanColumn
                   key={column.id}
                   column={column}
+                  accent={COLUMN_ACCENTS[i % COLUMN_ACCENTS.length]}
                   cards={column.cardIds
                     .map((cardId) => board.cards[cardId])
                     .filter((card) => Boolean(card))}
@@ -291,12 +303,8 @@ export const KanbanBoard = () => {
                 />
               ))}
             </section>
-            <DragOverlay>
-              {activeCard ? (
-                <div className="w-[260px]">
-                  <KanbanCardPreview card={activeCard} />
-                </div>
-              ) : null}
+            <DragOverlay dropAnimation={null}>
+              {activeCard ? <KanbanCardPreview card={activeCard} /> : null}
             </DragOverlay>
           </DndContext>
           <AiChat onBoardChanged={refresh} />

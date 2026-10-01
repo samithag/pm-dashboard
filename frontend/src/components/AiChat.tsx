@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Bot, SendHorizontal, Sparkles, User } from "lucide-react";
-import { apiChat, type ChatMessage } from "@/lib/api";
+import { apiChat, errorMessage, type ChatMessage } from "@/lib/api";
 
 type AiChatProps = {
   onBoardChanged: () => Promise<void>;
@@ -45,7 +45,7 @@ export const AiChat = ({ onBoardChanged }: AiChatProps) => {
         await onBoardChanged();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Chat failed");
+      setError(errorMessage(err, "Chat failed"));
     } finally {
       setSending(false);
     }

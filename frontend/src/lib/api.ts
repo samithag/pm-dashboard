@@ -7,6 +7,9 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "";
 export type ChatMessage = { role: string; content: string };
 export type ChatResponse = { message: string; operations: unknown[] };
 
+export const errorMessage = (err: unknown, fallback: string) =>
+  err instanceof Error ? err.message : fallback;
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     credentials: "include",

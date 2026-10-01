@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { CircleAlert, Layers, LoaderCircle, LockKeyhole, LogIn, User } from "lucide-react";
-import { apiLogin } from "@/lib/api";
+import { apiLogin, errorMessage } from "@/lib/api";
 
 type LoginFormProps = {
   onSuccess: () => void;
@@ -23,7 +23,7 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
       await apiLogin(username.trim(), password);
       onSuccess();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      setError(errorMessage(err, "Login failed"));
     } finally {
       setPending(false);
     }

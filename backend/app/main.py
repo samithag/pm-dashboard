@@ -11,6 +11,7 @@ from app.models import Board, Card, Column, User
 from app.routers import ai as ai_router
 from app.routers import auth as auth_router
 from app.routers import board as board_router
+from app.routers.board import DEFAULT_COLUMNS
 
 SEED_CARDS = {
     "col-backlog": [
@@ -53,16 +54,9 @@ def init_db():
             db.refresh(board)
 
         existing = {c.id for c in db.query(Column).filter(Column.board_id == board.id).all()}
-        defaults = [
-            ("col-backlog", "Backlog", 0),
-            ("col-discovery", "Discovery", 1),
-            ("col-progress", "In Progress", 2),
-            ("col-review", "Review", 3),
-            ("col-done", "Done", 4),
-        ]
-        for col_id, title, pos in defaults:
+        for position, (col_id, title) in enumerate(DEFAULT_COLUMNS):
             if col_id not in existing:
-                db.add(Column(id=col_id, board_id=board.id, title=title, position=pos))
+                db.add(Column(id=col_id, board_id=board.id, title=title, position=position))
         db.commit()
 
         if not db.query(Card).filter(Card.id.in_(["card-1", "card-8"])).first():

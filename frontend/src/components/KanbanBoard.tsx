@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -26,6 +26,7 @@ import {
   apiMoveCard,
   apiRenameColumn,
   apiUpdateCard,
+  errorMessage,
 } from "@/lib/api";
 
 type Status = "loading" | "login" | "ready";
@@ -56,17 +57,23 @@ export const KanbanBoard = () => {
       .catch(() => setStatus("login"));
   }, [refresh]);
 
-  const handleLoginSuccess = useCallback(async () => {
+  // Show the error, then resync with the server to undo the optimistic update.
+  const recover = async (err: unknown, fallback: string) => {
+    setError(errorMessage(err, fallback));
+    await refresh().catch(() => {});
+  };
+
+  const handleLoginSuccess = async () => {
     setError(null);
     try {
       await refresh();
       setStatus("ready");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load board");
+      setError(errorMessage(err, "Failed to load board"));
     }
-  }, [refresh]);
+  };
 
-  const handleLogout = useCallback(async () => {
+  const handleLogout = async () => {
     try {
       await apiLogout();
     } catch {
@@ -75,7 +82,7 @@ export const KanbanBoard = () => {
     setBoard(null);
     setError(null);
     setStatus("login");
-  }, []);
+  };
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveCardId(event.active.id as string);
@@ -93,25 +100,19 @@ export const KanbanBoard = () => {
     const nextColumns = moveCard(board.columns, activeId, over.id as string);
     setBoard({ ...board, columns: nextColumns });
 
-    let targetColumnId = "";
-    let targetIndex = 0;
-    for (const column of nextColumns) {
-      const index = column.cardIds.indexOf(activeId);
-      if (index !== -1) {
-        targetColumnId = column.id;
-        targetIndex = index;
-        break;
-      }
-    }
-    if (!targetColumnId) {
+    const targetColumn = nextColumns.find((column) =>
+      column.cardIds.includes(activeId)
+    );
+    if (!targetColumn) {
       return;
     }
 
     setError(null);
-    apiMoveCard(activeId, targetColumnId, targetIndex).catch(async (err) => {
-      setError(err instanceof Error ? err.message : "Failed to move card");
-      await refresh().catch(() => {});
-    });
+    apiMoveCard(
+      activeId,
+      targetColumn.id,
+      targetColumn.cardIds.indexOf(activeId)
+    ).catch((err) => recover(err, "Failed to move card"));
   };
 
   const handleRenameColumn = (columnId: string, title: string) => {
@@ -127,10 +128,9 @@ export const KanbanBoard = () => {
         : prev
     );
     setError(null);
-    apiRenameColumn(columnId, title).catch(async (err) => {
-      setError(err instanceof Error ? err.message : "Failed to rename column");
-      await refresh().catch(() => {});
-    });
+    apiRenameColumn(columnId, title).catch((err) =>
+      recover(err, "Failed to rename column")
+    );
   };
 
   const handleAddCard = async (
@@ -143,7 +143,7 @@ export const KanbanBoard = () => {
       await apiAddCard(columnId, title, details || "No details yet.");
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add card");
+      setError(errorMessage(err, "Failed to add card"));
     }
   };
 
@@ -165,8 +165,7 @@ export const KanbanBoard = () => {
     try {
       await apiUpdateCard(cardId, title, details);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update card");
-      await refresh().catch(() => {});
+      await recover(err, "Failed to update card");
     }
   };
 
@@ -190,29 +189,10 @@ export const KanbanBoard = () => {
       };
     });
     setError(null);
-    apiDeleteCard(cardId).catch(async (err) => {
-      setError(err instanceof Error ? err.message : "Failed to delete card");
-      await refresh().catch(() => {});
-    });
-  };
-
-  const cardsById = useMemo(() => board?.cards ?? {}, [board]);
-  const activeCard = activeCardId ? cardsById[activeCardId] : null;
-  const totalCards = useMemo(
-    () => (board ? Object.keys(board.cards).length : 0),
-    [board]
-  );
-
-  if (status === "loading") {
-    return (
-      <main className="mx-auto flex min-h-screen max-w-[1500px] flex-col items-center justify-center gap-3 px-6">
-        <LoaderCircle size={22} className="spinner text-[var(--primary-blue)]" />
-        <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[var(--gray-text)]">
-          Loading board...
-        </p>
-      </main>
+    apiDeleteCard(cardId).catch((err) =>
+      recover(err, "Failed to delete card")
     );
-  }
+  };
 
   if (status === "login") {
     return (
@@ -222,7 +202,7 @@ export const KanbanBoard = () => {
     );
   }
 
-  if (!board) {
+  if (status === "loading" || !board) {
     return (
       <main className="mx-auto flex min-h-screen max-w-[1500px] flex-col items-center justify-center gap-3 px-6">
         <LoaderCircle size={22} className="spinner text-[var(--primary-blue)]" />
@@ -232,6 +212,9 @@ export const KanbanBoard = () => {
       </main>
     );
   }
+
+  const activeCard = activeCardId ? board.cards[activeCardId] : null;
+  const totalCards = Object.keys(board.cards).length;
 
   return (
     <div className="relative min-h-screen">
@@ -295,7 +278,7 @@ export const KanbanBoard = () => {
                   accent={COLUMN_ACCENTS[i % COLUMN_ACCENTS.length]}
                   cards={column.cardIds
                     .map((cardId) => board.cards[cardId])
-                    .filter((card) => Boolean(card))}
+                    .filter(Boolean)}
                   onRename={handleRenameColumn}
                   onAddCard={handleAddCard}
                   onEditCard={handleEditCard}

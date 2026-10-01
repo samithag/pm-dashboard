@@ -11,14 +11,19 @@ export const NewCardForm = ({ onAdd }: NewCardFormProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [formState, setFormState] = useState(initialFormState);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!formState.title.trim()) {
-      return;
-    }
-    onAdd(formState.title.trim(), formState.details.trim());
+  const close = () => {
     setFormState(initialFormState);
     setIsOpen(false);
+  };
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const title = formState.title.trim();
+    if (!title) {
+      return;
+    }
+    onAdd(title, formState.details.trim());
+    close();
   };
 
   return (
@@ -56,10 +61,7 @@ export const NewCardForm = ({ onAdd }: NewCardFormProps) => {
             </button>
             <button
               type="button"
-              onClick={() => {
-                setIsOpen(false);
-                setFormState(initialFormState);
-              }}
+              onClick={close}
               className="rounded-full border border-[var(--stroke)] px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--gray-text)] transition hover:text-[var(--navy-dark)]"
             >
               Cancel
